@@ -10,7 +10,7 @@ import CardView from './CardView';
 const useStyles = createUseStyles({
     gameContainer: {
         width: '100%',
-        height: '100%',
+        height: '100dvh',
         position: 'relative',
         display: 'flex',
         flexDirection: 'column',
@@ -18,6 +18,7 @@ const useStyles = createUseStyles({
         justifyContent: 'flex-start',
         paddingTop: '6rem',
         boxSizing: 'border-box',
+        overflow: 'hidden',
     },
     topBar: {
         position: 'absolute',
@@ -96,11 +97,13 @@ const useStyles = createUseStyles({
         marginBottom: '2rem',
         textAlign: 'center',
         zIndex: 1,
+        flexShrink: 0,
     },
     playerListContainer: {
         width: '100%',
         maxWidth: '37.5rem',
-        height: '50vh',
+        flex: 1,
+        minHeight: 0,
         overflowY: 'auto',
         padding: '1rem 4rem',
         boxSizing: 'border-box',
@@ -112,10 +115,20 @@ const useStyles = createUseStyles({
         '&::-webkit-scrollbar': {
             display: 'none',
         },
+    },
+    gameContentWrapper: {
+        flex: 1,
+        width: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflowY: 'auto',
     }
 });
 
-const LobbyContent = ({ game, onRetry, sendMessage, close, droppingIds = [], gameState, gameData, handleActionButton, joinedLate }) => {
+const LobbyContent = ({ game, onRetry, sendMessage, close, droppingIds = [], gameState, gameData, handleActionButton, joinedLate, disableAction }) => {
     const [confirming, setConfirming] = useState(false);
     const [isLeaving, setIsLeaving] = useState(false);
 
@@ -169,7 +182,7 @@ const LobbyContent = ({ game, onRetry, sendMessage, close, droppingIds = [], gam
             <h1 className={classes.header}>{game?.host_name}'s Lobby</h1>
 
             {joinedLate && (
-                <div className={classes.gameContainer}>
+                <div className={classes.gameContentWrapper}>
                     <h1 className={classes.header}>GAME IN PROGRESS</h1>
                 </div>
             )}
@@ -183,16 +196,21 @@ const LobbyContent = ({ game, onRetry, sendMessage, close, droppingIds = [], gam
             )}
 
             {!joinedLate && gameState !== 0 && (
-                <CardView holeCards={gameData?.holeCards} board={gameData?.board} turn={gameData?.turn} river={gameData?.river} burnCards={gameData?.burnCards} />
+                <div className={classes.gameContentWrapper}>
+                    <CardView holeCards={gameData?.holeCards} board={gameData?.board} turn={gameData?.turn} river={gameData?.river} burnCards={gameData?.burnCards} />
+                </div>
             )}
 
 
             {game.host_user === window.userId && (
-                <GameAction
-                    handleActionButton={handleActionButton}
-                    gameState={gameState}
-                    playerCount={game.players.length}
-                />
+                <div style={{ flexShrink: 0, width: '100%', display: 'flex', justifyContent: 'center', paddingBottom: '4rem' }}>
+                    <GameAction
+                        handleActionButton={handleActionButton}
+                        gameState={gameState}
+                        playerCount={game.players.length}
+                        disable={disableAction}
+                    />
+                </div>
             )}
         </div>
     );
@@ -216,9 +234,11 @@ const Lobby = ({ game, onRetry }) => {
     const [gameState, setGameState] = useState(0);
     const [gameData, setGameData] = useState({});
     const [joinedLate, setJoinedLate] = useState(gameState == 0 && game?.isPlaying);
-
+    const [disableAction, setDisableAction] = useState(false);
 
     const handleActionButton = (isHostPlaying) => {
+        if (disableAction) return;
+        setDisableAction(true);
         switch (gameState) {
             case 0:
                 setGameState(1);
@@ -273,6 +293,8 @@ const Lobby = ({ game, onRetry }) => {
                 }
                 break;
             case "UPDATE_GAMES":
+                if (disableAction)
+                    setDisableAction(false);
                 if (lastMessage.payload?.type === "START_GAME") {
                     setGameState(2);
                     setGameData(lastMessage.payload);
@@ -311,7 +333,11 @@ const Lobby = ({ game, onRetry }) => {
     }
 
     if (!isValid) {
-        return <div className={classes.gameContainer}><Loader /></div>;
+        return (
+            <div className={classes.gameContainer} style={{ justifyContent: 'center', paddingTop: 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}><Loader /></div>
+            </div>
+        );
     }
 
     return (
@@ -325,6 +351,7 @@ const Lobby = ({ game, onRetry }) => {
             gameData={gameData}
             handleActionButton={handleActionButton}
             joinedLate={joinedLate}
+            disableAction={disableAction}
         />
     );
 };

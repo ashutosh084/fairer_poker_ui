@@ -7,6 +7,7 @@ import ErrorScreen from './components/ErrorScreen'
 import Lobby from './components/Lobby'
 import { useActiveGames } from './hooks/useActiveGames'
 import ServerBrowser from './components/ServerBrowser'
+import { useKeepAlive } from './hooks/useKeepAlive'
 
 const useStyles = createUseStyles({
   '@global': {
@@ -28,6 +29,7 @@ const useStyles = createUseStyles({
 
 const App = () => {
   const classes = useStyles();
+  useKeepAlive('/healthz');
   const { isLoading, isUnauthorized, isServiceUnavailable, data, retry } = useActiveGames();
 
   const activeGame = data ? data.find(game => game.active) : null;
@@ -43,7 +45,7 @@ const App = () => {
       {!isServiceUnavailable && !isUnauthorized && data && (
         activeGame ? (
           <Lobby game={activeGame} onRetry={retry} />
-        ) : (
+        ) : !isLoading && (
           <ServerBrowser games={data} onRetry={retry} />
         )
       )}

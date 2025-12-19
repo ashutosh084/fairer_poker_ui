@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createUseStyles } from 'react-jss';
 
 const useStyles = createUseStyles({
@@ -9,7 +9,7 @@ const useStyles = createUseStyles({
         flexDirection: 'column',
         alignItems: 'center',
         gap: '1.5rem',
-        margin: '2rem',
+        margin: '1rem',
         zIndex: 10,
     },
     checkboxRow: {
@@ -115,15 +115,22 @@ const gameStateVsButtonText = [
     "ERROR"
 ]
 
-const GameAction = ({ handleActionButton, gameState, playerCount }) => {
+const GameAction = ({ handleActionButton, gameState, playerCount, disable }) => {
 
     const [playing, setPlaying] = useState(true);
     const isStarting = gameState === 1;
-    const disabled = gameState === 1 || playerCount < 2;
-    const classes = useStyles({ playing, disabled });
+    const buttonDisabled = isStarting || playerCount < 2 || disable;
+    const checkboxDisabled = buttonDisabled || playerCount === 2;
+    const classes = useStyles({ playing, disabled: checkboxDisabled });
+
+    useEffect(() => {
+        if (playerCount === 2) {
+            setPlaying(true);
+        }
+    }, [playerCount]);
 
     const togglePlaying = () => {
-        if (!isStarting && !disabled) {
+        if (!isStarting && !checkboxDisabled) {
             setPlaying(!playing);
         }
     };
@@ -153,7 +160,7 @@ const GameAction = ({ handleActionButton, gameState, playerCount }) => {
                 <button
                     className={classes.button}
                     onClick={handleStartClick}
-                    disabled={isStarting || disabled}
+                    disabled={buttonDisabled}
                 >
                     <div className={classes.contentUnskew}>
                         {gameStateVsButtonText[gameState]}
